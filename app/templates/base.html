@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} - 社内eラーニング</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="brand" href="{{ url_for('videos.index') }}">社内eラーニング</a>
+    <ul>
+      {% if g.user %}
+        <li class="user-info">{{ g.user['username'] }} さん</li>
+        <li><a href="{{ url_for('videos.upload') }}">動画アップロード</a></li>
+        <li><a href="{{ url_for('auth.logout') }}">ログアウト</a></li>
+      {% else %}
+        <li><a href="{{ url_for('auth.login') }}">ログイン</a></li>
+        <li><a href="{{ url_for('auth.register') }}">新規登録</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  <main class="content">
+    {% for message in get_flashed_messages() %}
+      <div class="flash">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ video['title'] }}{% endblock %}
+
+{% block content %}
+  <h1>{{ video['title'] }}</h1>
+  <p class="meta">
+    アップロード者: {{ video['uploader_name'] }} /
+    {{ video['created_at'] }} /
+    <span class="badge badge-{{ video['status'] }}">{{ video['status'] }}</span>
+  </p>
+
+  <video controls class="video-player" src="{{ url_for('videos.stream', video_id=video['id']) }}"></video>
+
+  {% if video['description'] %}
+    <h2>説明</h2>
+    <p>{{ video['description'] }}</p>
+  {% endif %}
+
+  {% if g.user %}
+    <form method="post" action="{{ url_for('videos.process', video_id=video['id']) }}">
+      <button type="submit">AIで要約・クイズを生成する</button>
+    </form>
+  {% endif %}
+
+  {% if summary %}
+    <h2>AI要約</h2>
+    <p>{{ summary['summary'] }}</p>
+    {% if summary['key_points'] %}
+      <h3>重要ポイント</h3>
+      <ul>
+        {% for point in summary['key_points'].split('\n') %}
+          {% if point %}<li>{{ point }}</li>{% endif %}
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endif %}
+
+  {% if quiz and questions %}
+    <h2>理解度クイズ</h2>
+    <p>{{ questions|length }}問のクイズが生成されています。</p>
+    <a class="button" href="{{ url_for('quiz.take', quiz_id=quiz['id']) }}">クイズに挑戦する</a>
+  {% endif %}
+
+  {% if g.user and (g.user['id'] == video['uploaded_by'] or g.user['role'] == 'admin') %}
+    <form method="post" action="{{ url_for('videos.delete', video_id=video['id']) }}"
+      onsubmit="return confirm('この動画を削除しますか？');">
+      <button type="submit" class="danger">動画を削除</button>
+    </form>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block title %}クイズ結果 - {{ attempt['video_title'] }}{% endblock %}
+
+{% block content %}
+  <h1>クイズ結果: {{ attempt['video_title'] }}</h1>
+  <p class="score">得点: {{ attempt['score'] }} / {{ attempt['total'] }}</p>
+
+  {% for answer in answers %}
+    <fieldset class="question {{ 'correct' if answer['is_correct'] else 'incorrect' }}">
+      <legend>{{ loop.index }}. {{ answer['question'] }}</legend>
+      <p>あなたの回答: {{ answer['selected_choice']|upper }} -
+        {{ answer['choice_' ~ answer['selected_choice']] if answer['selected_choice'] in ['a','b','c','d'] else '未回答' }}</p>
+      {% if not answer['is_correct'] %}
+        <p>正解: {{ answer['correct_choice']|upper }} -
+          {{ answer['choice_' ~ answer['correct_choice']] }}</p>
+      {% endif %}
+      {% if answer['explanation'] %}
+        <p class="explanation">解説: {{ answer['explanation'] }}</p>
+      {% endif %}
+    </fieldset>
+  {% endfor %}
+
+  <a class="button" href="{{ url_for('videos.detail', video_id=attempt['video_id']) }}">動画ページに戻る</a>
+{% endblock %}

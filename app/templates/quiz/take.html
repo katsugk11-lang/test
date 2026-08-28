@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}クイズ - {{ quiz['video_title'] }}{% endblock %}
+
+{% block content %}
+  <h1>理解度クイズ: {{ quiz['video_title'] }}</h1>
+
+  <form method="post" class="form">
+    {% for question in questions %}
+      <fieldset class="question">
+        <legend>{{ loop.index }}. {{ question['question'] }}</legend>
+        {% for choice in ['a', 'b', 'c', 'd'] %}
+          <label class="choice">
+            <input type="radio" name="question_{{ question['id'] }}" value="{{ choice }}" required>
+            {{ question['choice_' ~ choice] }}
+          </label>
+        {% endfor %}
+      </fieldset>
+    {% endfor %}
+
+    <button type="submit">回答する</button>
+  </form>
+{% endblock %}

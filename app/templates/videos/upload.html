@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}動画アップロード{% endblock %}
+
+{% block content %}
+  <h1>動画アップロード</h1>
+  <form method="post" enctype="multipart/form-data" class="form">
+    <label for="title">タイトル</label>
+    <input type="text" name="title" id="title" required>
+
+    <label for="description">説明文</label>
+    <textarea name="description" id="description" rows="4"
+      placeholder="動画の概要を入力してください。"></textarea>
+
+    <label for="transcript">書き起こし（トランスクリプト）</label>
+    <textarea name="transcript" id="transcript" rows="8"
+      placeholder="AIによる要約・クイズ生成の精度を上げるには、動画の書き起こしテキストを入力してください（任意。未入力の場合は説明文が使用されます）。"></textarea>
+
+    <label for="video_file">動画ファイル</label>
+    <input type="file" name="video_file" id="video_file" accept="video/*" required>
+
+    <button type="submit">アップロード</button>
+  </form>
+{% endblock %}

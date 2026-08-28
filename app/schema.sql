@@ -1,0 +1,77 @@
+DROP TABLE IF EXISTS quiz_answer;
+DROP TABLE IF EXISTS quiz_attempt;
+DROP TABLE IF EXISTS quiz_question;
+DROP TABLE IF EXISTS quiz;
+DROP TABLE IF EXISTS video_summary;
+DROP TABLE IF EXISTS video;
+DROP TABLE IF EXISTS user;
+
+CREATE TABLE user (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'member',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE video (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT,
+  filename TEXT NOT NULL,
+  transcript TEXT,
+  status TEXT NOT NULL DEFAULT 'uploaded',
+  uploaded_by INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (uploaded_by) REFERENCES user (id)
+);
+
+CREATE TABLE video_summary (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  video_id INTEGER NOT NULL UNIQUE,
+  summary TEXT NOT NULL,
+  key_points TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (video_id) REFERENCES video (id)
+);
+
+CREATE TABLE quiz (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  video_id INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (video_id) REFERENCES video (id)
+);
+
+CREATE TABLE quiz_question (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  quiz_id INTEGER NOT NULL,
+  question TEXT NOT NULL,
+  choice_a TEXT NOT NULL,
+  choice_b TEXT NOT NULL,
+  choice_c TEXT NOT NULL,
+  choice_d TEXT NOT NULL,
+  correct_choice TEXT NOT NULL,
+  explanation TEXT,
+  FOREIGN KEY (quiz_id) REFERENCES quiz (id)
+);
+
+CREATE TABLE quiz_attempt (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  quiz_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  score INTEGER NOT NULL,
+  total INTEGER NOT NULL,
+  submitted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (quiz_id) REFERENCES quiz (id),
+  FOREIGN KEY (user_id) REFERENCES user (id)
+);
+
+CREATE TABLE quiz_answer (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  attempt_id INTEGER NOT NULL,
+  question_id INTEGER NOT NULL,
+  selected_choice TEXT NOT NULL,
+  is_correct INTEGER NOT NULL,
+  FOREIGN KEY (attempt_id) REFERENCES quiz_attempt (id),
+  FOREIGN KEY (question_id) REFERENCES quiz_question (id)
+);

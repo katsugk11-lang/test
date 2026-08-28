@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}動画一覧{% endblock %}
+
+{% block content %}
+  <h1>研修動画一覧</h1>
+
+  {% if not videos %}
+    <p>まだ動画がアップロードされていません。</p>
+  {% endif %}
+
+  <ul class="video-list">
+    {% for video in videos %}
+      <li class="video-card">
+        <a href="{{ url_for('videos.detail', video_id=video['id']) }}">
+          <h2>{{ video['title'] }}</h2>
+        </a>
+        <p class="meta">
+          アップロード者: {{ video['uploader_name'] }} /
+          {{ video['created_at'] }} /
+          <span class="badge badge-{{ video['status'] }}">{{ video['status'] }}</span>
+        </p>
+        {% if video['description'] %}
+          <p>{{ video['description'] }}</p>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}
