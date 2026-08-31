@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>社内eラーニング（プロトタイプ）</title>
+<style>
+  :root {
+    --color-bg: #f5f6f8;
+    --color-fg: #1f2430;
+    --color-accent: #2f6feb;
+    --color-border: #d8dce3;
+    --color-danger: #d64545;
+    --color-success: #1a9e5c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    background: #fff;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .navbar .brand {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  .navbar .nav-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .content {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+  }
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 500px;
+  }
+  .form label { font-weight: bold; margin-top: 0.5rem; }
+  .form input, .form textarea, .form select {
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+  }
+  button, .button {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.6rem 1.2rem;
+    background: #e5e7eb;
+    color: var(--color-fg);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 1rem;
+    width: fit-content;
+  }
+  button.primary, .button.primary { background: var(--color-accent); color: #fff; }
+  button.danger { background: var(--color-danger); color: #fff; }
+  .video-list { list-style: none; padding: 0; }
+  .video-card {
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  .video-card h2 { margin: 0 0 0.25rem; }
+  .video-card a { text-decoration: none; color: var(--color-fg); }
+  .meta { color: #666; font-size: 0.9rem; }
+  .badge { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 10px; background: #eee; font-size: 0.8rem; }
+  .badge-completed { background: #d6f5e3; color: var(--color-success); }
+  .badge-failed { background: #fbdada; color: var(--color-danger); }
+  .badge-processing { background: #fff3cd; }
+  .video-player { width: 100%; max-height: 450px; background: #000; margin: 1rem 0; }
+  .question { border: 1px solid var(--color-border); border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
+  .question.correct { border-color: var(--color-success); }
+  .question.incorrect { border-color: var(--color-danger); }
+  .choice { display: block; margin: 0.4rem 0; }
+  .score { font-size: 1.3rem; font-weight: bold; }
+  .explanation { color: #555; font-style: italic; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; }
+  .modal.hidden { display: none; }
+  .modal-box {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+  .warn { font-size: 0.85rem; color: #a15c00; background: #fff3cd; padding: 0.5rem; border-radius: 4px; }
+  .status-msg { margin-left: 0.5rem; color: #666; }
+</style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="#/" class="brand">社内eラーニング（プロトタイプ）</a>
+    <div class="nav-actions">
+      <button id="settingsBtn">AI設定</button>
+      <a href="#/upload" class="button primary">動画アップロード</a>
+    </div>
+  </nav>
+
+  <main id="app" class="content"></main>
+
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-box">
+      <h2>AI連携設定</h2>
+      <p class="warn">
+        このプロトタイプはセキュリティ対策を一切行っていません。APIキーはブラウザの localStorage
+        に平文で保存され、入力した外部APIへブラウザから直接送信されます。社内の検証用途以外では
+        使用しないでください。
+      </p>
+      <label for="aiProvider">プロバイダ</label>
+      <select id="aiProvider">
+        <option value="mock">mock（外部接続なし・サンプル応答）</option>
+        <option value="openai_compatible">OpenAI互換 Chat Completions API</option>
+      </select>
+      <label for="aiBaseUrl">APIベースURL</label>
+      <input type="text" id="aiBaseUrl" placeholder="https://api.openai.com/v1">
+      <label for="aiApiKey">APIキー</label>
+      <input type="password" id="aiApiKey" placeholder="sk-...">
+      <label for="aiModel">モデル名</label>
+      <input type="text" id="aiModel" placeholder="gpt-4o-mini">
+      <div class="modal-actions">
+        <button id="settingsCancel">閉じる</button>
+        <button id="settingsSave" class="primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- データ永続化（localStorage: メタデータ / IndexedDB: 動画本体） ----------
+  const STATE_KEY = "elearning_state";
+  const AI_SETTINGS_KEY = "elearning_ai_settings";
+  const DB_NAME = "elearning-proto";
+  const DB_STORE = "videoFiles";
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STATE_KEY);
+      if (!raw) return { videos: [], summaries: {}, quizzes: {}, attempts: [] };
+      const parsed = JSON.parse(raw);
+      return {
+        videos: parsed.videos || [],
+        summaries: parsed.summaries || {},
+        quizzes: parsed.quizzes || {},
+        attempts: parsed.attempts || [],
+      };
+    } catch (e) {
+      return { videos: [], summaries: {}, quizzes: {}, attempts: [] };
+    }
+  }
+
+  let state = loadState();
+
+  function persist() {
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+  }
+
+  function getAiSettings() {
+    try {
+      const raw = localStorage.getItem(AI_SETTINGS_KEY);
+      if (!raw) throw new Error("no settings");
+      return JSON.parse(raw);
+    } catch (e) {
+      return { provider: "mock", baseUrl: "https://api.openai.com/v1", apiKey: "", model: "gpt-4o-mini" };
+    }
+  }
+
+  function saveAiSettings(settings) {
+    localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(settings));
+  }
+
+  function openDb() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        req.result.createObjectStore(DB_STORE);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function saveVideoBlob(id, blob) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(DB_STORE, "readwrite");
+      tx.objectStore(DB_STORE).put(blob, id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function getVideoBlob(id) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(DB_STORE, "readonly");
+      const req = tx.objectStore(DB_STORE).get(id);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function deleteVideoBlob(id) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(DB_STORE, "readwrite");
+      tx.objectStore(DB_STORE).delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str == null ? "" : str).replace(/[&<>"']/g, (c) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+    ));
+  }
+
+  function uid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+  }
+
+  // ---------- 外部AI連携 ----------
+  const SUMMARY_QUIZ_PROMPT_HEAD = [
+    "あなたは社内研修動画の教材作成アシスタントです。",
+    "以下は研修動画の書き起こし（トランスクリプト）または説明文です。",
+    "これをもとに、次のJSON形式で日本語で出力してください。JSON以外の文章は一切出力しないでください。",
+    "",
+    "{",
+    '  "summary": "動画全体の要約（300文字程度）",',
+    '  "key_points": ["重要ポイント1", "重要ポイント2"],',
+    '  "quiz": [',
+    "    {",
+    '      "question": "問題文",',
+    '      "choice_a": "選択肢A",',
+    '      "choice_b": "選択肢B",',
+    '      "choice_c": "選択肢C",',
+    '      "choice_d": "選択肢D",',
+    '      "correct_choice": "a",',
+    '      "explanation": "正解の理由"',
+    "    }",
+    "  ]",
+    "}",
+    "",
+    "quizは4問作成してください。correct_choiceは \"a\"〜\"d\" のいずれかです。",
+    "",
+    "--- 動画テキスト ---",
+  ].join("\n");
+
+  async function generateSummaryAndQuiz(text) {
+    const settings = getAiSettings();
+    if (settings.provider !== "openai_compatible" || !settings.apiKey) {
+      return mockResponse(text);
+    }
+
+    const base = (settings.baseUrl || "https://api.openai.com/v1").replace(/\/$/, "");
+    const res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${settings.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: settings.model || "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "あなたは有能な教材作成アシスタントです。必ずJSONのみを返してください。" },
+          { role: "user", content: SUMMARY_QUIZ_PROMPT_HEAD + "\n" + text.slice(0, 12000) },
+        ],
+        temperature: 0.3,
+      }),
+    });
+
+    if (!res.ok) {
+      const bodyText = await res.text().catch(() => "");
+      throw new Error(`外部AI APIエラー (${res.status}): ${bodyText.slice(0, 200)}`);
+    }
+
+    const data = await res.json();
+    let content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    if (!content) throw new Error("外部AI APIのレスポンス形式が不正です。");
+
+    content = content.trim();
+    if (content.startsWith("```")) {
+      content = content.replace(/^```[a-zA-Z]*\n?/, "").replace(/```$/, "").trim();
+    }
+
+    try {
+      return JSON.parse(content);
+    } catch (e) {
+      throw new Error("AIの応答をJSONとして解析できませんでした。");
+    }
+  }
+
+  function mockResponse(text) {
+    const snippet = (text || "").trim().slice(0, 200) || "(説明文なし)";
+    const quiz = Array.from({ length: 4 }, (_, i) => ({
+      question: `[サンプル問題 ${i + 1}] この動画の主なテーマは何ですか？`,
+      choice_a: "選択肢A",
+      choice_b: "選択肢B",
+      choice_c: "選択肢C",
+      choice_d: "選択肢D",
+      correct_choice: "a",
+      explanation: "AI設定が未設定のため、サンプル問題を表示しています。右上の「AI設定」から接続先を設定できます。",
+    }));
+    return {
+      summary: `(モック要約) ${snippet}`,
+      key_points: ["AI設定（APIキー）が未設定のため、モック応答です。"],
+      quiz,
+    };
+  }
+
+  // ---------- ルーティング ----------
+  function currentRoute() {
+    const hash = location.hash || "#/";
+    return hash.replace(/^#\/?/, "").split("/").filter(Boolean);
+  }
+
+  function render() {
+    const parts = currentRoute();
+    const app = document.getElementById("app");
+
+    if (parts.length === 0) {
+      app.innerHTML = renderIndexHtml();
+    } else if (parts[0] === "upload") {
+      app.innerHTML = renderUploadHtml();
+      wireUpload();
+    } else if (parts[0] === "video" && parts[1]) {
+      renderDetail(parts[1]);
+    } else if (parts[0] === "quiz" && parts[1]) {
+      renderQuizTake(parts[1]);
+    } else if (parts[0] === "result" && parts[1]) {
+      renderQuizResult(parts[1]);
+    } else {
+      app.innerHTML = "<p>ページが見つかりません。</p>";
+    }
+  }
+
+  // ---------- 動画一覧 ----------
+  function renderIndexHtml() {
+    if (state.videos.length === 0) {
+      return "<h1>研修動画一覧</h1><p>まだ動画がアップロードされていません。</p>";
+    }
+    const sorted = state.videos.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const items = sorted
+      .map(
+        (v) => `
+      <li class="video-card">
+        <a href="#/video/${v.id}"><h2>${escapeHtml(v.title)}</h2></a>
+        <p class="meta">${new Date(v.createdAt).toLocaleString("ja-JP")} /
+          <span class="badge badge-${v.status}">${escapeHtml(v.status)}</span></p>
+        ${v.description ? `<p>${escapeHtml(v.description)}</p>` : ""}
+      </li>`
+      )
+      .join("");
+    return `<h1>研修動画一覧</h1><ul class="video-list">${items}</ul>`;
+  }
+
+  // ---------- アップロード ----------
+  function renderUploadHtml() {
+    return `
+      <h1>動画アップロード</h1>
+      <form id="uploadForm" class="form">
+        <label for="title">タイトル</label>
+        <input type="text" id="title" required>
+
+        <label for="description">説明文</label>
+        <textarea id="description" rows="3" placeholder="動画の概要を入力してください。"></textarea>
+
+        <label for="transcript">書き起こし（任意）</label>
+        <textarea id="transcript" rows="6"
+          placeholder="AIによる要約・クイズ生成の精度を上げるには、書き起こしテキストの入力を推奨します（未入力の場合は説明文が使用されます）。"></textarea>
+
+        <label for="videoFile">動画ファイル</label>
+        <input type="file" id="videoFile" accept="video/*" required>
+
+        <button type="submit" class="primary">アップロード</button>
+      </form>
+    `;
+  }
+
+  function wireUpload() {
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      const transcript = document.getElementById("transcript").value.trim();
+      const file = document.getElementById("videoFile").files[0];
+      if (!title || !file) return;
+
+      const id = uid();
+      await saveVideoBlob(id, file);
+      state.videos.push({
+        id,
+        title,
+        description,
+        transcript,
+        fileName: file.name,
+        status: "uploaded",
+        createdAt: new Date().toISOString(),
+      });
+      persist();
+      location.hash = `#/video/${id}`;
+    });
+  }
+
+  // ---------- 動画詳細 ----------
+  async function renderDetail(id) {
+    const app = document.getElementById("app");
+    const video = state.videos.find((v) => v.id === id);
+    if (!video) {
+      app.innerHTML = "<p>動画が見つかりません。</p>";
+      return;
+    }
+
+    const blob = await getVideoBlob(id);
+    const url = blob ? URL.createObjectURL(blob) : "";
+    const summary = state.summaries[id];
+    const quiz = state.quizzes[id];
+
+    app.innerHTML = `
+      <h1>${escapeHtml(video.title)}</h1>
+      <p class="meta">${new Date(video.createdAt).toLocaleString("ja-JP")} /
+        <span class="badge badge-${video.status}">${escapeHtml(video.status)}</span></p>
+      <video controls class="video-player" src="${url}"></video>
+      ${video.description ? `<h2>説明</h2><p>${escapeHtml(video.description)}</p>` : ""}
+
+      <button id="processBtn" class="primary">AIで要約・クイズを生成する</button>
+      <span id="processStatus" class="status-msg"></span>
+
+      ${
+        summary
+          ? `
+        <h2>AI要約</h2>
+        <p>${escapeHtml(summary.summary)}</p>
+        ${
+          summary.keyPoints && summary.keyPoints.length
+            ? `<h3>重要ポイント</h3><ul>${summary.keyPoints.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>`
+            : ""
+        }`
+          : ""
+      }
+
+      ${
+        quiz
+          ? `
+        <h2>理解度クイズ</h2>
+        <p>${quiz.questions.length}問のクイズが生成されています。</p>
+        <a class="button primary" href="#/quiz/${quiz.id}">クイズに挑戦する</a>`
+          : ""
+      }
+
+      <div><button id="deleteBtn" class="danger">動画を削除</button></div>
+    `;
+
+    document.getElementById("processBtn").addEventListener("click", () => processVideo(id));
+    document.getElementById("deleteBtn").addEventListener("click", async () => {
+      if (!confirm("この動画を削除しますか？")) return;
+      await deleteVideoBlob(id);
+      state.videos = state.videos.filter((v) => v.id !== id);
+      delete state.summaries[id];
+      delete state.quizzes[id];
+      persist();
+      location.hash = "#/";
+    });
+  }
+
+  async function processVideo(id) {
+    const video = state.videos.find((v) => v.id === id);
+    const statusEl = document.getElementById("processStatus");
+    const sourceText = (video.transcript || video.description || "").trim();
+
+    if (!sourceText) {
+      statusEl.textContent = "要約・クイズ生成には説明文または書き起こしが必要です。";
+      return;
+    }
+
+    video.status = "processing";
+    persist();
+    statusEl.textContent = "生成中...";
+
+    try {
+      const result = await generateSummaryAndQuiz(sourceText);
+      state.summaries[id] = {
+        summary: result.summary,
+        keyPoints: result.key_points || result.keyPoints || [],
+      };
+      const quizId = uid();
+      state.quizzes[id] = {
+        id: quizId,
+        videoId: id,
+        questions: (result.quiz || []).map((q) => ({ id: uid(), ...q })),
+      };
+      video.status = "completed";
+      persist();
+      renderDetail(id);
+    } catch (err) {
+      video.status = "failed";
+      persist();
+      statusEl.textContent = `エラー: ${err.message}`;
+    }
+  }
+
+  // ---------- クイズ受験 ----------
+  function findQuizById(quizId) {
+    return Object.values(state.quizzes).find((q) => q.id === quizId);
+  }
+
+  function renderQuizTake(quizId) {
+    const app = document.getElementById("app");
+    const quiz = findQuizById(quizId);
+    if (!quiz) {
+      app.innerHTML = "<p>クイズが見つかりません。</p>";
+      return;
+    }
+    const video = state.videos.find((v) => v.id === quiz.videoId);
+
+    const questionsHtml = quiz.questions
+      .map(
+        (q, i) => `
+      <fieldset class="question">
+        <legend>${i + 1}. ${escapeHtml(q.question)}</legend>
+        ${["a", "b", "c", "d"]
+          .map(
+            (c) => `
+          <label class="choice">
+            <input type="radio" name="q_${q.id}" value="${c}" required>
+            ${escapeHtml(q["choice_" + c])}
+          </label>`
+          )
+          .join("")}
+      </fieldset>`
+      )
+      .join("");
+
+    app.innerHTML = `
+      <h1>理解度クイズ: ${escapeHtml(video ? video.title : "")}</h1>
+      <label for="userName">お名前（任意）</label>
+      <input type="text" id="userName" placeholder="未入力の場合は「匿名」">
+      <form id="quizForm" class="form" style="max-width:100%">
+        ${questionsHtml}
+        <button type="submit" class="primary">回答する</button>
+      </form>
+    `;
+
+    document.getElementById("quizForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      let score = 0;
+      const answers = quiz.questions.map((q) => {
+        const checked = document.querySelector(`input[name="q_${q.id}"]:checked`);
+        const selected = checked ? checked.value : null;
+        const correct = selected === q.correct_choice;
+        if (correct) score++;
+        return { questionId: q.id, selected, correct };
+      });
+
+      const attemptId = uid();
+      state.attempts.push({
+        id: attemptId,
+        quizId: quiz.id,
+        videoId: quiz.videoId,
+        userName: document.getElementById("userName").value.trim() || "匿名",
+        score,
+        total: quiz.questions.length,
+        answers,
+        submittedAt: new Date().toISOString(),
+      });
+      persist();
+      location.hash = `#/result/${attemptId}`;
+    });
+  }
+
+  // ---------- クイズ結果 ----------
+  function renderQuizResult(attemptId) {
+    const app = document.getElementById("app");
+    const attempt = state.attempts.find((a) => a.id === attemptId);
+    if (!attempt) {
+      app.innerHTML = "<p>結果が見つかりません。</p>";
+      return;
+    }
+    const quiz = findQuizById(attempt.quizId);
+    const video = state.videos.find((v) => v.id === attempt.videoId);
+
+    const answersHtml = attempt.answers
+      .map((a, i) => {
+        const q = quiz.questions.find((q) => q.id === a.questionId);
+        return `
+      <fieldset class="question ${a.correct ? "correct" : "incorrect"}">
+        <legend>${i + 1}. ${escapeHtml(q.question)}</legend>
+        <p>あなたの回答: ${
+          a.selected ? `${a.selected.toUpperCase()} - ${escapeHtml(q["choice_" + a.selected])}` : "未回答"
+        }</p>
+        ${
+          !a.correct
+            ? `<p>正解: ${q.correct_choice.toUpperCase()} - ${escapeHtml(q["choice_" + q.correct_choice])}</p>`
+            : ""
+        }
+        ${q.explanation ? `<p class="explanation">解説: ${escapeHtml(q.explanation)}</p>` : ""}
+      </fieldset>`;
+      })
+      .join("");
+
+    app.innerHTML = `
+      <h1>クイズ結果: ${escapeHtml(video ? video.title : "")}</h1>
+      <p class="score">${escapeHtml(attempt.userName)} さんの得点: ${attempt.score} / ${attempt.total}</p>
+      ${answersHtml}
+      <a class="button primary" href="#/video/${attempt.videoId}">動画ページに戻る</a>
+    `;
+  }
+
+  // ---------- AI設定モーダル ----------
+  function wireSettingsModal() {
+    const modal = document.getElementById("settingsModal");
+    document.getElementById("settingsBtn").addEventListener("click", () => {
+      const s = getAiSettings();
+      document.getElementById("aiProvider").value = s.provider;
+      document.getElementById("aiBaseUrl").value = s.baseUrl || "https://api.openai.com/v1";
+      document.getElementById("aiApiKey").value = s.apiKey || "";
+      document.getElementById("aiModel").value = s.model || "gpt-4o-mini";
+      modal.classList.remove("hidden");
+    });
+    document.getElementById("settingsCancel").addEventListener("click", () => {
+      modal.classList.add("hidden");
+    });
+    document.getElementById("settingsSave").addEventListener("click", () => {
+      saveAiSettings({
+        provider: document.getElementById("aiProvider").value,
+        baseUrl: document.getElementById("aiBaseUrl").value.trim(),
+        apiKey: document.getElementById("aiApiKey").value.trim(),
+        model: document.getElementById("aiModel").value.trim(),
+      });
+      modal.classList.add("hidden");
+    });
+  }
+
+  // ---------- 初期化 ----------
+  window.addEventListener("hashchange", render);
+  window.addEventListener("DOMContentLoaded", () => {
+    wireSettingsModal();
+    render();
+  });
+})();
+</script>
+</body>
+</html>
