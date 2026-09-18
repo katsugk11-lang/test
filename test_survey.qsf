@@ -1,0 +1,125 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_0000000000001",
+    "SurveyName": "Qualtrics Test Survey",
+    "SurveyDescription": null,
+    "SurveyOwnerID": "UR_0000000000001",
+    "SurveyBrandID": "example",
+    "DivisionID": null,
+    "SurveyLanguage": "JA",
+    "SurveyActiveResponseSet": "RS_0000000000001",
+    "SurveyStatus": "Inactive",
+    "SurveyStartDate": "0000-00-00 00:00:00",
+    "SurveyExpirationDate": "0000-00-00 00:00:00",
+    "SurveyCreationDate": "2026-09-18 00:00:00",
+    "CreatorID": "UR_0000000000001",
+    "LastModified": "2026-09-18 00:00:00",
+    "LastAccessed": "0000-00-00 00:00:00",
+    "LastActivated": "0000-00-00 00:00:00",
+    "Deleted": null
+  },
+  "SurveyElements": [
+    {
+      "SurveyID": "SV_0000000000001",
+      "Element": "BL",
+      "PrimaryAttribute": "Survey Blocks",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "BL_0000000000001": {
+          "Type": "Default",
+          "Description": "Default Question Block",
+          "ID": "BL_0000000000001",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1"
+            }
+          ],
+          "Options": {
+            "BlockLocking": "false",
+            "RandomizeQuestions": "false",
+            "BlockVisibility": "Collapsed"
+          }
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_0000000000001",
+      "Element": "FL",
+      "PrimaryAttribute": "Survey Flow",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "Type": "Root",
+        "FlowID": "FL_1",
+        "Flow": [
+          {
+            "Type": "Block",
+            "ID": "BL_0000000000001",
+            "FlowID": "FL_2"
+          }
+        ],
+        "Properties": {
+          "Count": 2
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_0000000000001",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID1",
+      "SecondaryAttribute": "好きな季節はどれですか？",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "好きな季節はどれですか？",
+        "DataExportTag": "Q1",
+        "QuestionType": "MC",
+        "Selector": "SAVR",
+        "SubSelector": "TX",
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "好きな季節はどれですか？",
+        "Choices": {
+          "1": { "Display": "春" },
+          "2": { "Display": "夏" },
+          "3": { "Display": "秋" },
+          "4": { "Display": "冬" }
+        },
+        "ChoiceOrder": ["1", "2", "3", "4"],
+        "Validation": {
+          "Settings": {
+            "ForceResponse": "OFF",
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "QuestionID": "QID1",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        }
+      }
+    },
+    {
+      "SurveyID": "SV_0000000000001",
+      "Element": "SO",
+      "PrimaryAttribute": "Scoring Object",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": []
+    },
+    {
+      "SurveyID": "SV_0000000000001",
+      "Element": "PROJ_DTA",
+      "PrimaryAttribute": "Project Data",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "Category": "CORE",
+        "Description": null
+      }
+    }
+  ]
+}
